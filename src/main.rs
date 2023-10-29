@@ -8,18 +8,6 @@ use angrybirds2_cryptor_cli::{constant_items, crypto::Cryptor};
 
 use clap::Parser;
 
-
-// #[test]
-// fn dec() -> Result<(), Box<dyn Error>> {
-//     let mut input_file = File::open("/Users/edith/Desktop/index")?;
-//     let mut input_buffer: Vec<u8> = Vec::new();
-//     input_file.read_to_end(&mut input_buffer)?;
-//     let cryptor: Cryptor = Cryptor::new(constant_items::XOR_KEY, &input_buffer);
-//     let mut output_file = File::create("/Users/edith/Desktop/test.bin")?;
-//     output_file.write_all(&cryptor.sha1(&input_buffer))?;
-//     Ok(())
-// }
-
 // 8DA4F614BD109FD64248704E48E720719DBA53061539CB4C46B6ECBA475C6E5C - Session_ID
 // D8BEB2B529C8FAC1BC697121125618BF790BD7F87AE759266CA6CC9CC07B6035 - FriendsCache
 // 5CC8D4E0834E058B4A47D33C3B97BB1505D33A626B4C5A74699DE886B7BF871F - PVPPlayerData
