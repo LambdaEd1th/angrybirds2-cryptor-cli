@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cryptor = Cryptor::new(&input_index_buffer);
     match cli.crypto_mode {
         CryptoModes::Encrypt => {
-            output_buffer = cryptor.encrypt(&input_file_buffer);
+            output_buffer = cryptor.encrypt(&input_file_buffer)?;
         }
         CryptoModes::Decrypt => {
             output_buffer = cryptor.decrypt(&input_file_buffer)?;
