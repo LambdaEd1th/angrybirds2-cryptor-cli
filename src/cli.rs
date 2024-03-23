@@ -9,13 +9,13 @@ pub struct Cli {
     #[arg(value_enum)]
     pub crypto_mode: CryptoModes,
 
-    /// Input file
-    #[arg(value_name = "INPUT_FILE")]
-    pub input_file: PathBuf,
-
     /// Input index
     #[arg(value_name = "INPUT_INDEX")]
     pub input_index: PathBuf,
+
+    /// Input file
+    #[arg(value_name = "INPUT_FILE")]
+    pub input_file: PathBuf,
 
     /// Output file
     #[arg(value_name = "OUTPUT_FILE")]

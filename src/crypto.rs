@@ -53,7 +53,7 @@ impl<'cryptor> Cryptor<'cryptor> {
     }
 
     fn read_index(&self) -> Result<([u8; 32], [u8; 16]), CryptorError> {
-        let mut buffer: Vec<u8> = match &self.index[..4] != HEADER {
+        let mut buffer: Vec<u8> = match &self.index[..4] == HEADER {
             true => self.index[4..].to_vec(),
             false => {
                 return Err(CryptorError::HeaderError("Invalid header".to_string()));
