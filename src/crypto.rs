@@ -28,25 +28,26 @@ const HEADER: &[u8] = &[0xAB, 0xBA, 0x01, 0x00];
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Cryptor<'cryptor> {
     pub index: &'cryptor [u8],
+    pub input_file: &'cryptor [u8],
 }
 
 impl<'cryptor> Cryptor<'cryptor> {
-    pub fn new(index: &'cryptor [u8]) -> Self {
-        Self { index }
+    pub fn new(index: &'cryptor [u8], input_file: &'cryptor [u8]) -> Self {
+        Self { index, input_file }
     }
 
-    pub fn encrypt(&self, buffer: &[u8]) -> Result<Vec<u8>, CryptorError> {
+    pub fn encrypt(&self) -> Result<Vec<u8>, CryptorError> {
         let (key, iv) = self.read_index()?;
         let encryptor = Aes256CbcEnc::new(&key.into(), &iv.into());
-        let cipher_buffer = encryptor.encrypt_padded_vec_mut::<Pkcs7>(buffer);
+        let cipher_buffer = encryptor.encrypt_padded_vec_mut::<Pkcs7>(self.input_file);
         Ok(cipher_buffer)
     }
 
-    pub fn decrypt(&self, buffer: &[u8]) -> Result<Vec<u8>, CryptorError> {
+    pub fn decrypt(&self) -> Result<Vec<u8>, CryptorError> {
         let (key, iv) = self.read_index()?;
         let decryptor = Aes256CbcDec::new(&key.into(), &iv.into());
         let plain_buffer = decryptor
-            .decrypt_padded_vec_mut::<Pkcs7>(buffer)
+            .decrypt_padded_vec_mut::<Pkcs7>(self.input_file)
             .map_err(|e| CryptorError::AesCryptoError(e.to_string()))?;
         Ok(plain_buffer)
     }
@@ -76,7 +77,7 @@ impl<'cryptor> Cryptor<'cryptor> {
         Ok((key, iv))
     }
 
-    pub fn sha256(&self, string: &str) -> String {
+    pub fn sha256_string(&self, string: &str) -> String {
         let mut string_buffer = XOR_KEY.to_vec();
         for ch in string.to_string().chars() {
             for byte in ch.to_string().as_bytes().iter() {
