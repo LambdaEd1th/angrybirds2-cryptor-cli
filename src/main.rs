@@ -3,8 +3,11 @@ use std::{
     fs::File,
     io::{Read, Write},
 };
+mod crypto;
+use crypto::Cryptor;
 
-use angrybirds2_cryptor_cli::{constant_items, crypto::Cryptor};
+mod cli;
+use cli::{Cli, CryptoModes};
 
 use clap::Parser;
 
@@ -22,14 +25,14 @@ use clap::Parser;
 // E266F162807E3EB7692756371F9BD111A2D4FF29E26DBE9C982160A93E9FBB11 - HockeyAndroidCurrentAppInfo
 
 #[test]
-fn sha256_hash() -> Result<(), Box<dyn Error>> {
+fn sha256_hash() {
     const INDEX: &[u8] = &[
         0xAB, 0xBA, 0x01, 0x00, 0xE4, 0xA2, 0xED, 0xBE, 0x6C, 0x61, 0x6D, 0x62, 0x64, 0x61, 0x5F,
         0x65, 0x64, 0x31, 0x74, 0x68, 0x00, 0x00, 0x00, 0x00, 0x61, 0x6E, 0x67, 0x72, 0x79, 0x62,
         0x69, 0x72, 0x64, 0x73, 0x32, 0x2D, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6F, 0x72, 0x2D, 0x63,
         0x6C, 0x69, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ];
-    let cryptor: Cryptor = Cryptor::new(constant_items::XOR_KEY, INDEX);
+    let cryptor: Cryptor = Cryptor::new(INDEX);
     let original_string = "CombinedPlayerData";
     let hash_result = &cryptor.sha256(original_string);
     let hash_string = "B4F59D3E9582F13D98B85102B4003E377A9434837B71846F44C05637D2613FA1";
@@ -40,7 +43,28 @@ fn sha256_hash() -> Result<(), Box<dyn Error>> {
         hash_result,
         hash_string
     );
-    Ok(())
 }
 
-fn main() {}
+fn main() -> Result<(), Box<dyn Error>> {
+    let cli = Cli::parse();
+    let mut input_file = File::open(cli.input_file)?;
+    let mut input_index = File::open(cli.input_index)?;
+    let mut input_file_buffer: Vec<u8> = Vec::new();
+    input_file.read_to_end(&mut input_file_buffer)?;
+    let mut input_index_buffer: Vec<u8> = Vec::new();
+    input_index.read_to_end(&mut input_index_buffer)?;
+    let output_buffer: Vec<u8>;
+
+    let cryptor = Cryptor::new(&input_index_buffer);
+    match cli.crypto_mode {
+        CryptoModes::Encrypt => {
+            output_buffer = cryptor.encrypt(&input_file_buffer);
+        }
+        CryptoModes::Decrypt => {
+            output_buffer = cryptor.decrypt(&input_file_buffer)?;
+        }
+    }
+    let mut output_file = File::create(cli.output_file)?;
+    output_file.write_all(&output_buffer)?;
+    Ok(())
+}
