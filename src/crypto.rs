@@ -77,7 +77,7 @@ impl<'cryptor> Cryptor<'cryptor> {
         Ok((key, iv))
     }
 
-    pub fn sha256_string(&self, string: &str) -> String {
+    pub fn sha256_string(&self, string: &str) -> Result<String, CryptorError> {
         let mut string_buffer = XOR_KEY.to_vec();
         for ch in string.to_string().chars() {
             for byte in ch.to_string().as_bytes().iter() {
@@ -88,9 +88,10 @@ impl<'cryptor> Cryptor<'cryptor> {
         let result: Vec<u8> = Sha256::new_with_prefix(string_buffer).finalize().to_vec();
         let mut result_string = String::new();
         for element in result.iter() {
-            write!(&mut result_string, "{:02X}", element).unwrap();
+            write!(&mut result_string, "{:02X}", element)
+                .map_err(|e| CryptorError::Sha256Error(e.to_string()))?;
         }
-        result_string
+        Ok(result_string)
     }
 }
 
@@ -98,6 +99,7 @@ impl<'cryptor> Cryptor<'cryptor> {
 pub enum CryptorError {
     HeaderError(String),
     AesCryptoError(String),
+    Sha256Error(String),
 }
 
 impl std::fmt::Display for CryptorError {
@@ -105,6 +107,7 @@ impl std::fmt::Display for CryptorError {
         match self {
             Self::AesCryptoError(s) => write!(f, "AesCryptoError: {}", s),
             Self::HeaderError(s) => write!(f, "AesCryptoError: {}", s),
+            Self::Sha256Error(s) => write!(f, "Sha256error: {}", s),
         }
     }
 }
