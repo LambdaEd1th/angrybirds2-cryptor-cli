@@ -1,14 +1,30 @@
 use std::path::PathBuf;
 
-use clap::{Parser, ValueEnum};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser, Clone, Debug, PartialEq, Eq)]
 #[command(author, version, about, long_about = None)]
+#[command(next_line_help = true)]
 pub struct Cli {
     /// What crypto mode to run the program in
-    #[arg(value_enum)]
-    pub crypto_mode: CryptoModes,
+    #[command(subcommand)]
+    pub command: Commands,
+}
 
+#[derive(Subcommand, Clone, Debug, PartialEq, Eq)]
+pub enum Commands {
+    /// Encrypt mode
+    Encrypt(CryptoArgs),
+
+    /// Decrypt mode
+    Decrypt(CryptoArgs),
+
+    /// List the original file name
+    List,
+}
+
+#[derive(Args, Clone, Debug, PartialEq, Eq)]
+pub struct CryptoArgs {
     /// Input index
     #[arg(value_name = "INPUT_INDEX")]
     pub input_index: PathBuf,
@@ -20,10 +36,4 @@ pub struct Cli {
     /// Output file
     #[arg(value_name = "OUTPUT_FILE")]
     pub output_file: PathBuf,
-}
-
-#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
-pub enum CryptoModes {
-    Encrypt,
-    Decrypt,
 }

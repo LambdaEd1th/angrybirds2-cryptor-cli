@@ -1,6 +1,6 @@
 use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
 use sha2::{Digest, Sha256};
-use std::fmt::Write;
+use std::{collections::BTreeMap, fmt::Write};
 
 type Aes256CbcEnc = cbc::Encryptor<aes::Aes256Enc>;
 type Aes256CbcDec = cbc::Decryptor<aes::Aes256Dec>;
@@ -24,6 +24,34 @@ const XOR_KEY: &[u8] = &[
     0xF6, 0x13, 0x39, 0x67, 0xAA, 0x02, 0x7A, 0x8E, 0x76, 0x11, 0xFF, 0xD7, 0xC8, 0x7F, 0xFE, 0x7A,
 ];
 const HEADER: &[u8] = &[0xAB, 0xBA, 0x01, 0x00];
+
+// 8DA4F614BD109FD64248704E48E720719DBA53061539CB4C46B6ECBA475C6E5C - Session_ID
+// D8BEB2B529C8FAC1BC697121125618BF790BD7F87AE759266CA6CC9CC07B6035 - FriendsCache
+// 5CC8D4E0834E058B4A47D33C3B97BB1505D33A626B4C5A74699DE886B7BF871F - PVPPlayerData
+// 91C8ECDC2923E2A7E9EC4817C7D6D5FBF25E05BFB2402B3714ABFCD5A3C001BF - FbFriendsCache
+// B2BD44808B01FEEE6C1B8917B851CEF64978B5560EA10368424F7EE9196DF6BA - BeaconAppConfig
+// B530BFB9C225DF26B7D4DFE3E5808F16FB5ACFF9DC3481BA677EC62C85E3BF62 - AbbaFriendsCache
+// A9A96744AB58AFA572B442A99668F25E57622CF995B250737CDED7C6F6480FFA - PublicPlayerData
+// B4F59D3E9582F13D98B85102B4003E377A9434837B71846F44C05637D2613FA1 - CombinedPlayerData
+// 937A9CA7A99C29ADB867F6B0000DD6310FC7D9DEF559FC2436D0F0E64F0B3E3D - TowerOfFortuneState
+// E817BFFB14A03700401432D98906062C116497657A48885E9DBC5F1989CE3AE5 - HockeyIOSCurrentAppInfo
+// A664CA94E883A423A522AE9778BDB3B1379BD7FC72E90CCA361B1396E3BEC2E1 - LastTimeBundleWasRefreshed
+// E266F162807E3EB7692756371F9BD111A2D4FF29E26DBE9C982160A93E9FBB11 - HockeyAndroidCurrentAppInfo
+
+const FILE_NAMES: &[&str] = &[
+    "Session_ID",
+    "FriendsCache",
+    "PVPPlayerData",
+    "FbFriendsCache",
+    "BeaconAppConfig",
+    "AbbaFriendsCache",
+    "PublicPlayerData",
+    "CombinedPlayerData",
+    "TowerOfFortuneState",
+    "HockeyIOSCurrentAppInfo",
+    "LastTimeBundleWasRefreshed",
+    "HockeyAndroidCurrentAppInfo",
+];
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Cryptor<'cryptor> {
@@ -52,6 +80,14 @@ impl<'cryptor> Cryptor<'cryptor> {
         Ok(plain_buffer)
     }
 
+    pub fn sha256_map() -> Result<BTreeMap<String, String>, CryptorError> {
+        let mut sha256_map: BTreeMap<String, String> = BTreeMap::new();
+        for &name in FILE_NAMES {
+            sha256_map.insert(name.to_string(), Self::sha256_string(name)?);
+        }
+        Ok(sha256_map)
+    }
+
     fn read_index(&self) -> Result<([u8; 32], [u8; 16]), CryptorError> {
         let mut buffer: Vec<u8> = match &self.index[..4] == HEADER {
             true => self.index[4..].to_vec(),
@@ -77,7 +113,7 @@ impl<'cryptor> Cryptor<'cryptor> {
         Ok((key, iv))
     }
 
-    pub fn sha256_string(string: &str) -> Result<String, CryptorError> {
+    fn sha256_string(string: &str) -> Result<String, CryptorError> {
         let mut string_buffer = XOR_KEY.to_vec();
         for ch in string.to_string().chars() {
             for byte in ch.to_string().as_bytes().iter() {
@@ -88,7 +124,7 @@ impl<'cryptor> Cryptor<'cryptor> {
         let result: Vec<u8> = Sha256::new_with_prefix(string_buffer).finalize().to_vec();
         let mut result_string = String::new();
         for element in result.iter() {
-            write!(&mut result_string, "{:02X}", element)
+            write!(&mut result_string, "{element:02X}")
                 .map_err(|e| CryptorError::Sha256Error(e.to_string()))?;
         }
         Ok(result_string)
