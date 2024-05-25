@@ -113,7 +113,7 @@ impl<'cryptor> Cryptor<'cryptor> {
         Ok((key, iv))
     }
 
-    fn sha256_string(string: &str) -> Result<String, CryptorError> {
+    pub fn sha256_string(string: &str) -> Result<String, CryptorError> {
         let mut string_buffer = XOR_KEY.to_vec();
         for ch in string.to_string().chars() {
             for byte in ch.to_string().as_bytes().iter() {
