@@ -43,11 +43,11 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.platform.name }}
-          path: "envtmpl*"
+          path: "angrybirds2-cryptor-cli*"
         if: startsWith( github.ref, 'refs/tags/v' )
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v1
         with:
           draft: true
-          files: "envtmpl*"
+          files: "angrybirds2-cryptor-cli*"
         if: startsWith( github.ref, 'refs/tags/v' )
