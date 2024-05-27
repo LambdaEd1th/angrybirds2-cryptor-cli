@@ -1,7 +1,7 @@
 # Angry Birds 2 Cryptor
 
 * Author: ed1th
-* Version: 0.1.0
+* Version: 0.1.1
 
 ## Description
 Angry Birds 2 user data cryptor<br>
