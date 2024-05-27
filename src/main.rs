@@ -12,8 +12,7 @@ use cli::{Cli, Commands};
 use clap::Parser;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let parse = Cli::parse();
-    let cli = parse;
+    let cli = Cli::parse();
 
     match cli.command {
         Commands::Encrypt(args) => {
