@@ -7,10 +7,10 @@ use rust_embed::Embed;
 pub struct Resource;
 
 impl Resource {
-    pub fn get_key() -> Option<Cow<'static, [u8]>> {
+    pub fn get_key() -> Cow<'static, [u8]> {
         match Self::get("xor_key.bin") {
-            Some(file) => Some(file.data),
-            None => None,
+            Some(file) => file.data,
+            None => Cow::Borrowed(&[]),
         }
     }
 }

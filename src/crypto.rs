@@ -9,10 +9,7 @@ type Aes256CbcDec = cbc::Decryptor<aes::Aes256Dec>;
 
 const HEADER: &[u8] = &[0xAB, 0xBA, 0x01, 0x00];
 
-static XOR_KEY: LazyLock<Cow<'static, [u8]>> = LazyLock::new(|| match Resource::get_key() {
-    Some(bytes) => bytes,
-    None => Cow::Borrowed(&[]),
-});
+static XOR_KEY: LazyLock<Cow<'static, [u8]>> = LazyLock::new(|| Resource::get_key());
 
 // 8DA4F614BD109FD64248704E48E720719DBA53061539CB4C46B6ECBA475C6E5C - Session_ID
 // D8BEB2B529C8FAC1BC697121125618BF790BD7F87AE759266CA6CC9CC07B6035 - FriendsCache
