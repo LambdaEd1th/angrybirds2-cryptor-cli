@@ -9,8 +9,6 @@ use crypto::Cryptor;
 mod cli;
 use cli::{Cli, Commands};
 
-mod resource;
-
 use clap::Parser;
 
 fn main() -> Result<(), Box<dyn Error>> {
