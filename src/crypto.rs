@@ -1,9 +1,14 @@
-use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
+use aes::cipher::{
+    block_padding::{Pkcs7, UnpadError},
+    BlockDecryptMut, BlockEncryptMut, KeyIvInit,
+};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, fmt::Write};
 
 type Aes256CbcEnc = cbc::Encryptor<aes::Aes256Enc>;
 type Aes256CbcDec = cbc::Decryptor<aes::Aes256Dec>;
+
+pub type Result<T> = core::result::Result<T, Error>;
 
 const HEADER: &[u8] = &[0xAB, 0xBA, 0x01, 0x00];
 
@@ -65,23 +70,21 @@ impl<'cryptor> Cryptor<'cryptor> {
         Self { index, input_file }
     }
 
-    pub fn encrypt(&self) -> Result<Vec<u8>, CryptorError> {
+    pub fn encrypt(&self) -> Result<Vec<u8>> {
         let (key, iv) = self.read_index()?;
         let encryptor = Aes256CbcEnc::new(&key.into(), &iv.into());
         let cipher_buffer = encryptor.encrypt_padded_vec_mut::<Pkcs7>(self.input_file);
         Ok(cipher_buffer)
     }
 
-    pub fn decrypt(&self) -> Result<Vec<u8>, CryptorError> {
+    pub fn decrypt(&self) -> Result<Vec<u8>> {
         let (key, iv) = self.read_index()?;
         let decryptor = Aes256CbcDec::new(&key.into(), &iv.into());
-        let plain_buffer = decryptor
-            .decrypt_padded_vec_mut::<Pkcs7>(self.input_file)
-            .map_err(|e| CryptorError::AesCryptoError(e.to_string()))?;
+        let plain_buffer = decryptor.decrypt_padded_vec_mut::<Pkcs7>(self.input_file)?;
         Ok(plain_buffer)
     }
 
-    pub fn sha256_map() -> Result<BTreeMap<String, String>, CryptorError> {
+    pub fn sha256_map() -> Result<BTreeMap<String, String>> {
         let mut sha256_map: BTreeMap<String, String> = BTreeMap::new();
         for &name in FILE_NAMES {
             sha256_map.insert(name.to_string(), Self::sha256_string(name)?);
@@ -89,11 +92,13 @@ impl<'cryptor> Cryptor<'cryptor> {
         Ok(sha256_map)
     }
 
-    fn read_index(&self) -> Result<([u8; 32], [u8; 16]), CryptorError> {
-        let mut buffer: Vec<u8> = match &self.index[..4] == HEADER {
+    fn read_index(&self) -> Result<([u8; 32], [u8; 16])> {
+        let mut file_header = [0u8; 4];
+        file_header.clone_from_slice(&self.index[..4]);
+        let mut buffer: Vec<u8> = match &file_header == HEADER {
             true => self.index[4..].to_vec(),
             false => {
-                return Err(CryptorError::HeaderError("Invalid header".to_string()));
+                return Err(Error::HeaderError(file_header));
             }
         };
 
@@ -114,7 +119,7 @@ impl<'cryptor> Cryptor<'cryptor> {
         Ok((key, iv))
     }
 
-    pub fn sha256_string(string: &str) -> Result<String, CryptorError> {
+    pub fn sha256_string(string: &str) -> Result<String> {
         let mut string_buffer = XOR_KEY.to_vec();
         for ch in string.to_string().chars() {
             for byte in ch.to_string().as_bytes().iter() {
@@ -125,28 +130,47 @@ impl<'cryptor> Cryptor<'cryptor> {
         let result: Vec<u8> = Sha256::new_with_prefix(string_buffer).finalize().to_vec();
         let mut result_string = String::new();
         for element in result.iter() {
-            write!(&mut result_string, "{element:02X}")
-                .map_err(|e| CryptorError::Sha256Error(e.to_string()))?;
+            write!(&mut result_string, "{element:02X}")?;
         }
         Ok(result_string)
     }
 }
 
 #[derive(Debug)]
-pub enum CryptorError {
-    HeaderError(String),
-    AesCryptoError(String),
-    Sha256Error(String),
+pub enum Error {
+    HeaderError([u8; 4]),
+    AesCryptoError(UnpadError),
+    FormatError(core::fmt::Error),
 }
 
-impl std::fmt::Display for CryptorError {
+impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::AesCryptoError(s) => write!(f, "AesCryptoError: {}", s),
-            Self::HeaderError(s) => write!(f, "AesCryptoError: {}", s),
-            Self::Sha256Error(s) => write!(f, "Sha256error: {}", s),
+        match &self {
+            Self::AesCryptoError(err) => write!(f, "AesCryptoError: {err}"),
+            Self::HeaderError(arr) => write!(f, "HeaderError: {arr:#X?}"),
+            Self::FormatError(err) => write!(f, "Sha256error: {err}"),
         }
     }
 }
 
-impl std::error::Error for CryptorError {}
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match &self {
+            Self::HeaderError(_) => None,
+            Self::AesCryptoError(err) => Some(err),
+            Self::FormatError(err) => Some(err),
+        }
+    }
+}
+
+impl From<UnpadError> for Error {
+    fn from(err: UnpadError) -> Self {
+        Self::AesCryptoError(err)
+    }
+}
+
+impl From<core::fmt::Error> for Error {
+    fn from(err: core::fmt::Error) -> Self {
+        Self::FormatError(err)
+    }
+}

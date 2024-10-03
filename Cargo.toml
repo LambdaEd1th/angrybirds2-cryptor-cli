@@ -1,7 +1,13 @@
 [package]
 name = "angrybirds2-cryptor-cli"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
+authors = ["ed1th"]
+description = "Angry Birds 2 user data cryptor"
+categories = ["command-line-utilities"]
+readme = "README.md"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/LambdaEd1th/angrybirds2-cryptor-cli"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
